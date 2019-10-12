@@ -15,18 +15,9 @@
  */
 package com.jagrosh.jmusicbot.utils;
 
-import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import java.util.List;
-import com.jagrosh.jmusicbot.audio.AudioHandler;
-import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioTrack;
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.JDA;
-import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.entities.TextChannel;
-import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.entities.VoiceChannel;
 
 /**
@@ -46,85 +37,13 @@ public class FormatUtil {
         seconds %= 60;
         return (hours>0 ? hours+":" : "") + (minutes<10 ? "0"+minutes : minutes) + ":" + (seconds<10 ? "0"+seconds : seconds);
     }
-    
-    public static Message nowPlayingMessage(Guild guild, String successEmoji)
-    {
-        MessageBuilder mb = new MessageBuilder();
-        mb.append(successEmoji+" **Now Playing...**");
-        EmbedBuilder eb = new EmbedBuilder();
-        AudioHandler ah = (AudioHandler)guild.getAudioManager().getSendingHandler();
-        eb.setColor(guild.getSelfMember().getColor());
-        if(ah==null || !ah.isMusicPlaying())
-        {
-            eb.setTitle("No music playing");
-            eb.setDescription("\u23F9 "+FormatUtil.progressBar(-1)+" "+FormatUtil.volumeIcon(ah==null?100:ah.getPlayer().getVolume()));
-        }
-        else
-        {
-            if(ah.getRequester()!=0)
-            {
-                User u = guild.getJDA().getUserById(ah.getRequester());
-                if(u==null)
-                    eb.setAuthor("Unknown (ID:"+ah.getRequester()+")", null, null);
-                else
-                    eb.setAuthor(u.getName()+"#"+u.getDiscriminator(), null, u.getEffectiveAvatarUrl());
-            }
-
-            try {
-                eb.setTitle(ah.getPlayer().getPlayingTrack().getInfo().title, ah.getPlayer().getPlayingTrack().getInfo().uri);
-            } catch(Exception e) {
-                eb.setTitle(ah.getPlayer().getPlayingTrack().getInfo().title);
-            }
-
-            if(!AudioHandler.USE_NP_REFRESH && ah.getPlayer().getPlayingTrack() instanceof YoutubeAudioTrack)
-                eb.setThumbnail("https://img.youtube.com/vi/"+ah.getPlayer().getPlayingTrack().getIdentifier()+"/mqdefault.jpg");
-
-            eb.setDescription(FormatUtil.embedFormat(ah));
-        }
-        return mb.setEmbed(eb.build()).build();
-    }
-    
-    public static String topicFormat(AudioHandler handler, JDA jda)
-    {
-        if(handler==null)
-            return "No music playing\n\u23F9 "+progressBar(-1)+" "+volumeIcon(100);
-        else if (!handler.isMusicPlaying())
-            return "No music playing\n\u23F9 "+progressBar(-1)+" "+volumeIcon(handler.getPlayer().getVolume());
-        else
-        {
-            long userid = handler.getRequester();
-            AudioTrack track = handler.getPlayer().getPlayingTrack();
-            String title = track.getInfo().title;
-            return "**"+title+"** ["+(userid==0 ? "autoplay" : "<@"+userid+">")+"]"
-                    + "\n"+(handler.getPlayer().isPaused()?"\u23F8":"\u25B6")+" "
-                    +"["+formatTime(track.getDuration())+"] "
-                    +volumeIcon(handler.getPlayer().getVolume());
-        }
-    }
-    
-    public static String embedFormat(AudioHandler handler)
-    {
-        if(handler==null)
-            return "No music playing\n\u23F9 "+progressBar(-1)+" "+volumeIcon(100);
-        else if (!handler.isMusicPlaying())
-            return "No music playing\n\u23F9 "+progressBar(-1)+" "+volumeIcon(handler.getPlayer().getVolume());
-        else
-        {
-            AudioTrack track = handler.getPlayer().getPlayingTrack();
-            double progress = (double)track.getPosition()/track.getDuration();
-            return (handler.getPlayer().isPaused()?"\u23F8":"\u25B6")
-                    +" "+progressBar(progress)
-                    +" `["+formatTime(track.getPosition()) + "/" + formatTime(track.getDuration()) +"]` "
-                    +volumeIcon(handler.getPlayer().getVolume());
-        }
-    }
         
     public static String progressBar(double percent)
     {
         String str = "";
-        for(int i=0; i<8; i++)
-            if(i == (int)(percent*8))
-                str+="\uD83D\uDD18";
+        for(int i=0; i<12; i++)
+            if(i == (int)(percent*12))
+                str+="\uD83D\uDD18"; // 🔘
             else
                 str+="▬";
         return str;
@@ -133,12 +52,12 @@ public class FormatUtil {
     public static String volumeIcon(int volume)
     {
         if(volume == 0)
-            return "\uD83D\uDD07";
+            return "\uD83D\uDD07"; // 🔇
         if(volume < 30)
-            return "\uD83D\uDD08";
+            return "\uD83D\uDD08"; // 🔈
         if(volume < 70)
-            return "\uD83D\uDD09";
-        return "\uD83D\uDD0A";
+            return "\uD83D\uDD09"; // 🔉
+        return "\uD83D\uDD0A";     // 🔊
     }
     
     public static String listOfTChannels(List<TextChannel> list, String query)
@@ -150,6 +69,7 @@ public class FormatUtil {
             out+="\n**And "+(list.size()-6)+" more...**";
         return out;
     }
+    
     public static String listOfVChannels(List<VoiceChannel> list, String query)
     {
         String out = " Multiple voice channels found matching \""+query+"\":";
@@ -159,6 +79,7 @@ public class FormatUtil {
             out+="\n**And "+(list.size()-6)+" more...**";
         return out;
     }
+    
     public static String listOfRoles(List<Role> list, String query)
     {
         String out = " Multiple text channels found matching \""+query+"\":";
@@ -167,5 +88,10 @@ public class FormatUtil {
         if(list.size()>6)
             out+="\n**And "+(list.size()-6)+" more...**";
         return out;
+    }
+    
+    public static String filter(String input)
+    {
+        return input.replace("@everyone", "@\u0435veryone").replace("@here", "@h\u0435re").trim(); // cyrillic letter e
     }
 }
